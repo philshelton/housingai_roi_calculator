@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HousingAI ROI Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue: #1B4F72;
+      --accent: #2980B9;
+      --accent-light: #3498DB;
+      --dark: #2C3E50;
+      --green: #27AE60;
+      --green-light: #EAFAF1;
+      --amber: #E67E22;
+      --amber-light: #FEF5E7;
+      --red: #E74C3C;
+      --bg: #F7F9FC;
+      --card: #FFFFFF;
+      --border: #E1E8ED;
+      --text: #333333;
+      --text-light: #666666;
+      --input-bg: #FFF9E6;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      {% if embed %} padding: 16px; {% else %} padding: 24px; {% endif %}
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding: 32px 24px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--accent) 100%);
+      border-radius: var(--radius);
+      color: white;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 14px;
+      opacity: 0.85;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Hero result */
+    .hero-result {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .hero-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      border-top: 3px solid var(--accent);
+      transition: transform 0.2s;
+    }
+    .hero-card:hover { transform: translateY(-2px); }
+    .hero-card.primary { border-top-color: var(--green); }
+    .hero-card .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-light);
+      margin-bottom: 8px;
+    }
+    .hero-card .value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .hero-card.primary .value { color: var(--green); }
+    .hero-card .sub {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    /* Sections */
+    .section {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--blue);
+      color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-header .badge {
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .section-header .toggle {
+      font-size: 20px;
+      transition: transform 0.3s;
+      line-height: 1;
+    }
+    .section-header .toggle.collapsed { transform: rotate(-90deg); }
+    .section-body {
+      padding: 24px;
+      transition: max-height 0.3s ease;
+    }
+    .section-body.collapsed {
+      display: none;
+    }
+
+    /* Input rows */
+    .input-group {
+      margin-bottom: 20px;
+    }
+    .input-group:last-child { margin-bottom: 0; }
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .input-row:last-child { border-bottom: none; }
+    .input-row label {
+      font-size: 14px;
+      color: var(--text);
+    }
+    .input-row label small {
+      display: block;
+      font-size: 12px;
+      color: var(--text-light);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+    .input-row input[type="number"],
+    .input-row input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      color: var(--blue);
+      background: var(--input-bg);
+      text-align: right;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(41,128,185,0.15);
+    }
+
+    /* Slider inputs */
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr 80px 180px;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .slider-row:last-child { border-bottom: none; }
+    .slider-row label {
+      font-size: 14px;
+      color: var(--text);
+    }
+    .slider-row label small {
+      display: block;
+      font-size: 12px;
+      color: var(--text-light);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+    .slider-row .current-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--blue);
+      text-align: center;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(to right, var(--accent), var(--accent-light));
+      border-radius: 3px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: var(--blue);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Activity table */
+    .activity-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 8px;
+    }
+    .activity-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: white;
+      background: var(--blue);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .activity-table th:first-child { text-align: left; border-radius: 8px 0 0 0; }
+    .activity-table th:last-child { border-radius: 0 8px 0 0; }
+    .activity-table td {
+      padding: 10px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .activity-table td:first-child { text-align: left; }
+    .activity-table tr:nth-child(even) td { background: #FAFBFC; }
+    .activity-table td input {
+      width: 70px;
+      padding: 6px 8px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--blue);
+      background: var(--input-bg);
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .activity-table td input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .activity-table td.calculated {
+      font-weight: 600;
+      color: var(--green);
+    }
+    .activity-table td.saving {
+      font-weight: 700;
+      color: var(--green);
+    }
+    .activity-table tfoot td {
+      font-weight: 700;
+      background: var(--green-light) !important;
+      color: var(--green);
+      font-size: 15px;
+      border-top: 2px solid var(--green);
+    }
+
+    /* Risk table */
+    .risk-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 8px;
+    }
+    .risk-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: white;
+      background: var(--blue);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .risk-table th:first-child { text-align: left; border-radius: 8px 0 0 0; }
+    .risk-table th:last-child { border-radius: 0 8px 0 0; }
+    .risk-table td {
+      padding: 10px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .risk-table td:first-child { text-align: left; }
+    .risk-table tr:nth-child(even) td { background: #FAFBFC; }
+    .risk-table td input {
+      width: 80px;
+      padding: 6px 8px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--blue);
+      background: var(--input-bg);
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .risk-table td input:focus { outline: none; border-color: var(--accent); }
+    .risk-table td.calculated { font-weight: 600; color: var(--green); }
+    .risk-table tfoot td {
+      font-weight: 700;
+      background: var(--green-light) !important;
+      color: var(--green);
+      font-size: 15px;
+      border-top: 2px solid var(--green);
+    }
+
+    /* Summary section */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      border-radius: 8px;
+      background: #FAFBFC;
+    }
+    .summary-row .label { font-size: 15px; color: var(--text); }
+    .summary-row .value { font-size: 18px; font-weight: 700; color: var(--blue); }
+    .summary-row.total {
+      background: var(--green-light);
+      border: 2px solid var(--green);
+    }
+    .summary-row.total .label { font-weight: 600; color: var(--green); }
+    .summary-row.total .value { font-size: 22px; color: var(--green); }
+    .summary-row.cost {
+      background: #FFF5F5;
+      border: 1px solid #FED7D7;
+    }
+    .summary-row.cost .value { color: var(--red); }
+    .summary-row.net {
+      background: linear-gradient(135deg, var(--green) 0%, #2ECC71 100%);
+      border: none;
+      padding: 20px;
+    }
+    .summary-row.net .label { color: white; font-weight: 600; font-size: 16px; }
+    .summary-row.net .value { color: white; font-size: 28px; }
+
+    /* Footer note */
+    .footer-note {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+    .footer-note a { color: var(--accent); text-decoration: none; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-result { grid-template-columns: repeat(2, 1fr); }
+      .input-row { grid-template-columns: 1fr; gap: 8px; }
+      .slider-row { grid-template-columns: 1fr; gap: 8px; }
+      .activity-table, .risk-table { font-size: 12px; }
+      .hero-card .value { font-size: 20px; }
+      body { padding: 12px; }
+    }
+    @media (max-width: 480px) {
+      .hero-result { grid-template-columns: 1fr 1fr; }
+      .header h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>HousingAI ROI Calculator</h1>
+      <p>Model the financial case for AI-powered regulatory guidance. Adjust the inputs below to see your personalised return on investment.</p>
+    </div>
+
+    <!-- Hero Results -->
+    <div class="hero-result">
+      <div class="hero-card primary">
+        <div class="label">Net Annual Benefit</div>
+        <div class="value" id="hero-net">&pound;0</div>
+        <div class="sub">After HousingAI cost</div>
+      </div>
+      <div class="hero-card">
+        <div class="label">Return on Investment</div>
+        <div class="value" id="hero-roi">0%</div>
+        <div class="sub">Annual ROI</div>
+      </div>
+      <div class="hero-card">
+        <div class="label">Payback Period</div>
+        <div class="value" id="hero-payback">0</div>
+        <div class="sub">Months</div>
+      </div>
+      <div class="hero-card">
+        <div class="label">Cost Per Home</div>
+        <div class="value" id="hero-cph">&pound;0</div>
+        <div class="sub">Per year</div>
+      </div>
+    </div>
+
+    <!-- Section 1: Organisation Profile -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2><span>&#127970;</span> Organisation Profile</h2>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="input-group">
+          <div class="input-row">
+            <label>Organisation name</label>
+            <input type="text" id="org-name" value="{{ org_name or '' }}" placeholder="Your organisation" style="text-align:left;">
+          </div>
+          <div class="input-row">
+            <label>Number of homes managed</label>
+            <input type="number" id="homes" value="5000" min="100" step="100">
+          </div>
+          <div class="input-row">
+            <label>Compliance &amp; governance staff
+              <small>Staff involved in regulatory monitoring and compliance</small>
+            </label>
+            <input type="number" id="compliance-staff" value="4" min="1">
+          </div>
+          <div class="input-row">
+            <label>Fully loaded hourly cost (&pound;)
+              <small>Include salary, NI, pension, and overheads</small>
+            </label>
+            <input type="number" id="compliance-rate" value="45" min="20">
+          </div>
+          <div class="input-row">
+            <label>Operational / frontline hourly cost (&pound;)</label>
+            <input type="number" id="ops-rate" value="32" min="15">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Time Savings -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2><span>&#9200;</span> Staff Time Savings</h2>
+        <span class="badge" id="badge-time">&pound;0/year</span>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estimate the weekly hours currently spent on each activity, and what you\u2019d expect with HousingAI. Savings calculate automatically.</p>
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Current<br>hrs/week</th>
+              <th>With AI<br>hrs/week</th>
+              <th>Saved<br>hrs/week</th>
+              <th>Annual<br>saving</th>
+            </tr>
+          </thead>
+          <tbody id="time-body">
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Total</td>
+              <td id="time-total-current">0</td>
+              <td id="time-total-with">0</td>
+              <td id="time-total-saved">0</td>
+              <td id="time-total-saving">&pound;0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 3: Risk Reduction -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2><span>&#128737;</span> Risk Reduction Value</h2>
+        <span class="badge" id="badge-risk">&pound;0/year</span>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estimate the financial impact and probability of key compliance risks. Even modest probability reductions yield significant value.</p>
+        <table class="risk-table">
+          <thead>
+            <tr>
+              <th>Risk Category</th>
+              <th>Impact (&pound;)</th>
+              <th>Current<br>probability</th>
+              <th>With AI<br>probability</th>
+              <th>Risk reduction<br>value</th>
+            </tr>
+          </thead>
+          <tbody id="risk-body">
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Total Risk Reduction</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td id="risk-total-saving">&pound;0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 4: Additional Savings -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2><span>&#128176;</span> Additional Savings</h2>
+        <span class="badge" id="badge-additional">&pound;0/year</span>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="input-group">
+          <div class="slider-row">
+            <label>Current annual consultancy spend (&pound;)
+              <small>External regulatory compliance advice</small>
+            </label>
+            <div class="current-val" id="consultancy-val">&pound;25,000</div>
+            <input type="range" id="consultancy-spend" min="0" max="100000" step="1000" value="25000" oninput="updateSlider(this, 'consultancy-val', 'currency'); recalculate();">
+          </div>
+          <div class="slider-row">
+            <label>% replaceable by HousingAI
+              <small>Proportion of consultancy HousingAI can replace</small>
+            </label>
+            <div class="current-val" id="consultancy-pct-val">40%</div>
+            <input type="range" id="consultancy-pct" min="0" max="100" step="5" value="40" oninput="updateSlider(this, 'consultancy-pct-val', 'percent'); recalculate();">
+          </div>
+          <div class="slider-row">
+            <label>New compliance hires per year</label>
+            <div class="current-val" id="hires-val">1</div>
+            <input type="range" id="new-hires" min="0" max="5" step="1" value="1" oninput="updateSlider(this, 'hires-val', 'number'); recalculate();">
+          </div>
+          <div class="slider-row">
+            <label>Weeks saved onboarding per hire
+              <small>Faster time-to-productivity with HousingAI</small>
+            </label>
+            <div class="current-val" id="onboard-val">3</div>
+            <input type="range" id="onboard-weeks" min="0" max="8" step="1" value="3" oninput="updateSlider(this, 'onboard-val', 'number'); recalculate();">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: HousingAI Cost -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)" style="background: var(--dark);">
+        <h2><span>&#128178;</span> HousingAI Investment</h2>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="input-group">
+          <div class="input-row">
+            <label>Subscription tier</label>
+            <select id="subscription-tier" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;font-weight:600;color:var(--blue);background:var(--input-bg);" onchange="updateSubscriptionFromTier()">
+              <option value="">Select tier...</option>
+              <option value="12000">Starter</option>
+              <option value="30000">Small</option>
+              <option value="54000">Medium</option>
+              <option value="78000">Large</option>
+            </select>
+          </div>
+          <div class="input-row">
+            <label>Annual subscription (&pound;)</label>
+            <input type="number" id="subscription" value="15000" min="0" step="500" readonly style="background-color:#f5f5f5;" oninput="recalculate()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: ROI Summary -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)" style="background: var(--green);">
+        <h2><span>&#128200;</span> ROI Summary</h2>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="summary-grid">
+          <div class="summary-row">
+            <div class="label">A. Annual staff time savings</div>
+            <div class="value" id="sum-time">&pound;0</div>
+          </div>
+          <div class="summary-row">
+            <div class="label">B. Annual risk reduction value</div>
+            <div class="value" id="sum-risk">&pound;0</div>
+          </div>
+          <div class="summary-row">
+            <div class="label">C. Annual additional savings</div>
+            <div class="value" id="sum-additional">&pound;0</div>
+          </div>
+          <div class="summary-row total">
+            <div class="label">Total Annual Benefit (A + B + C)</div>
+            <div class="value" id="sum-gross">&pound;0</div>
+          </div>
+          <div class="summary-row cost">
+            <div class="label">Less: Annual cost of HousingAI</div>
+            <div class="value" id="sum-cost">&pound;0</div>
+          </div>
+          <div class="summary-row net">
+            <div class="label">Net Annual Benefit</div>
+            <div class="value" id="sum-net">&pound;0</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px;">
+            <div class="summary-row" style="flex-direction:column;text-align:center;">
+              <div class="label" style="font-size:12px;">Return on Investment</div>
+              <div class="value" id="sum-roi" style="font-size:24px;">0%</div>
+            </div>
+            <div class="summary-row" style="flex-direction:column;text-align:center;">
+              <div class="label" style="font-size:12px;">Payback Period</div>
+              <div class="value" id="sum-payback" style="font-size:24px;">0 months</div>
+            </div>
+            <div class="summary-row" style="flex-direction:column;text-align:center;">
+              <div class="label" style="font-size:12px;">Cost Per Home/Year</div>
+              <div class="value" id="sum-cph" style="font-size:24px;">&pound;0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      <p>This calculator provides illustrative estimates based on the inputs you provide. Actual results may vary.<br>
+      &copy; 2025 <a href="https://housingai.co.uk" target="_blank">HousingAI Ltd</a>. All rights reserved.</p>
+    </div>
+  </div>
+
+  <script>
+    // Data definitions
+    const timeActivities = [
+      { name: "Regulatory monitoring & scanning", current: 10, withAI: 2, type: "compliance" },
+      { name: "Interpretation & impact assessment", current: 8, withAI: 2, type: "compliance" },
+      { name: "Briefing papers & board reports", current: 6, withAI: 2, type: "compliance" },
+      { name: "Staff queries & guidance dissemination", current: 5, withAI: 1, type: "compliance" },
+      { name: "Training content (regulatory)", current: 4, withAI: 1, type: "compliance" },
+      { name: "Operational managers \u2014 reg. queries", current: 3, withAI: 1, type: "ops" },
+      { name: "Frontline staff \u2014 guidance lookups", current: 2, withAI: 0.5, type: "ops" }
+    ];
+
+    const riskCategories = [
+      { name: "RSH regulatory notice / IDA downgrade", impact: 250000, currentProb: 15, reducedProb: 5 },
+      { name: "Ombudsman severe maladministration", impact: 100000, currentProb: 20, reducedProb: 8 },
+      { name: "Building safety enforcement action", impact: 500000, currentProb: 10, reducedProb: 3 },
+      { name: "Awaab\u2019s Law non-compliance", impact: 150000, currentProb: 15, reducedProb: 5 },
+      { name: "Reputational damage / negative media", impact: 200000, currentProb: 20, reducedProb: 10 }
+    ];
+
+    // Render tables
+    function renderTables() {
+      const timeBody = document.getElementById('time-body');
+      timeBody.innerHTML = timeActivities.map((a, i) => `
+        <tr>
+          <td>${a.name}</td>
+          <td><input type="number" id="time-current-${i}" value="${a.current}" min="0" step="0.5" oninput="recalculate()"></td>
+          <td><input type="number" id="time-with-${i}" value="${a.withAI}" min="0" step="0.5" oninput="recalculate()"></td>
+          <td class="calculated" id="time-saved-${i}">0</td>
+          <td class="saving" id="time-saving-${i}">&pound;0</td>
+        </tr>
+      `).join('');
+
+      const riskBody = document.getElementById('risk-body');
+      riskBody.innerHTML = riskCategories.map((r, i) => `
+        <tr>
+          <td>${r.name}</td>
+          <td><input type="number" id="risk-impact-${i}" value="${r.impact}" min="0" step="10000" oninput="recalculate()"></td>
+          <td><input type="number" id="risk-current-${i}" value="${r.currentProb}" min="0" max="100" step="1" oninput="recalculate()">%</td>
+          <td><input type="number" id="risk-reduced-${i}" value="${r.reducedProb}" min="0" max="100" step="1" oninput="recalculate()">%</td>
+          <td class="calculated" id="risk-saving-${i}">&pound;0</td>
+        </tr>
+      `).join('');
+    }
+
+    // Format currency
+    function fmt(n) {
+      if (n < 0) return '-\u00A3' + Math.abs(Math.round(n)).toLocaleString();
+      return '\u00A3' + Math.round(n).toLocaleString();
+    }
+
+    // Update slider display
+    function updateSlider(el, displayId, type) {
+      const v = parseFloat(el.value);
+      const display = document.getElementById(displayId);
+      if (type === 'currency') display.textContent = fmt(v);
+      else if (type === 'percent') display.textContent = v + '%';
+      else display.textContent = v;
+    }
+
+    // Toggle section collapse
+    function toggleSection(header) {
+      const body = header.nextElementSibling;
+      const toggle = header.querySelector('.toggle');
+      body.classList.toggle('collapsed');
+      toggle.classList.toggle('collapsed');
+    }
+
+    // Main calculation
+    function recalculate() {
+      const complianceRate = parseFloat(document.getElementById('compliance-rate').value) || 0;
+      const opsRate = parseFloat(document.getElementById('ops-rate').value) || 0;
+      const homes = parseFloat(document.getElementById('homes').value) || 1;
+
+      // Time savings
+      let totalCurrent = 0, totalWith = 0, totalSaved = 0, totalTimeSaving = 0;
+      timeActivities.forEach((a, i) => {
+        const current = parseFloat(document.getElementById(`time-current-${i}`).value) || 0;
+        const withAI = parseFloat(document.getElementById(`time-with-${i}`).value) || 0;
+        const saved = Math.max(0, current - withAI);
+        const rate = a.type === 'compliance' ? complianceRate : opsRate;
+        const annualSaving = saved * 52 * rate;
+
+        document.getElementById(`time-saved-${i}`).textContent = saved.toFixed(1);
+        document.getElementById(`time-saving-${i}`).textContent = fmt(annualSaving);
+
+        totalCurrent += current;
+        totalWith += withAI;
+        totalSaved += saved;
+        totalTimeSaving += annualSaving;
+      });
+
+      document.getElementById('time-total-current').textContent = totalCurrent.toFixed(1);
+      document.getElementById('time-total-with').textContent = totalWith.toFixed(1);
+      document.getElementById('time-total-saved').textContent = totalSaved.toFixed(1);
+      document.getElementById('time-total-saving').textContent = fmt(totalTimeSaving);
+
+      // Risk reduction
+      let totalRiskSaving = 0;
+      riskCategories.forEach((r, i) => {
+        const impact = parseFloat(document.getElementById(`risk-impact-${i}`).value) || 0;
+        const currentProb = parseFloat(document.getElementById(`risk-current-${i}`).value) / 100;
+        const reducedProb = parseFloat(document.getElementById(`risk-reduced-${i}`).value) / 100;
+        const saving = impact * Math.max(0, currentProb - reducedProb);
+
+        document.getElementById(`risk-saving-${i}`).textContent = fmt(saving);
+        totalRiskSaving += saving;
+      });
+      document.getElementById('risk-total-saving').textContent = fmt(totalRiskSaving);
+
+      // Additional savings
+      const consultancySpend = parseFloat(document.getElementById('consultancy-spend').value) || 0;
+      const consultancyPct = parseFloat(document.getElementById('consultancy-pct').value) / 100;
+      const newHires = parseFloat(document.getElementById('new-hires').value) || 0;
+      const onboardWeeks = parseFloat(document.getElementById('onboard-weeks').value) || 0;
+      const consultancySaving = consultancySpend * consultancyPct;
+      const onboardingSaving = newHires * onboardWeeks * 37.5 * complianceRate;
+      const totalAdditional = consultancySaving + onboardingSaving;
+
+      // Costs
+      const subscription = parseFloat(document.getElementById('subscription').value) || 0;
+      const annualCost = subscription;
+
+      // Summary
+      const grossBenefit = totalTimeSaving + totalRiskSaving + totalAdditional;
+      const netBenefit = grossBenefit - annualCost;
+      const roi = annualCost > 0 ? (netBenefit / annualCost) * 100 : 0;
+      const payback = grossBenefit > 0 ? (annualCost / grossBenefit) * 12 : 0;
+      const costPerHome = homes > 0 ? annualCost / homes : 0;
+
+      // Update badges
+      document.getElementById('badge-time').textContent = fmt(totalTimeSaving) + '/year';
+      document.getElementById('badge-risk').textContent = fmt(totalRiskSaving) + '/year';
+      document.getElementById('badge-additional').textContent = fmt(totalAdditional) + '/year';
+
+      // Update summary
+      document.getElementById('sum-time').textContent = fmt(totalTimeSaving);
+      document.getElementById('sum-risk').textContent = fmt(totalRiskSaving);
+      document.getElementById('sum-additional').textContent = fmt(totalAdditional);
+      document.getElementById('sum-gross').textContent = fmt(grossBenefit);
+      document.getElementById('sum-cost').textContent = fmt(annualCost);
+      document.getElementById('sum-net').textContent = fmt(netBenefit);
+      document.getElementById('sum-roi').textContent = Math.round(roi) + '%';
+      document.getElementById('sum-payback').textContent = payback.toFixed(1) + ' months';
+      document.getElementById('sum-cph').textContent = '\u00A3' + costPerHome.toFixed(2);
+
+      // Update hero
+      document.getElementById('hero-net').textContent = fmt(netBenefit);
+      document.getElementById('hero-roi').textContent = Math.round(roi) + '%';
+      document.getElementById('hero-payback').textContent = payback.toFixed(1);
+      document.getElementById('hero-cph').textContent = '\u00A3' + costPerHome.toFixed(2);
+    }
+
+    // Update subscription from tier dropdown
+    function updateSubscriptionFromTier() {
+      const tierSelect = document.getElementById('subscription-tier');
+      const subscriptionInput = document.getElementById('subscription');
+      
+      if (tierSelect.value) {
+        subscriptionInput.value = tierSelect.value;
+        subscriptionInput.readOnly = true;
+        subscriptionInput.style.backgroundColor = '#f5f5f5';
+      } else {
+        subscriptionInput.readOnly = false;
+        subscriptionInput.style.backgroundColor = 'var(--input-bg)';
+      }
+      
+      recalculate();
+    }
+
+    // Attach oninput to all number inputs in org profile
+    document.querySelectorAll('#homes, #compliance-staff, #compliance-rate, #ops-rate, #subscription').forEach(el => {
+      el.addEventListener('input', recalculate);
+    });
+
+    // Init
+    renderTables();
+    recalculate();
+  </script>
+</body>
+</html>
