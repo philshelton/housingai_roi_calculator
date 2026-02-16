@@ -8,3 +8,8 @@ run:
   command: python3 -m gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 30 app:app
   network:
     port: 8080
+  env:
+    - name: DYNAMODB_TABLE
+      value: housingai-roi-calculator
+    - name: AWS_REGION
+      value: eu-west-2
